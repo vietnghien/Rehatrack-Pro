@@ -1,0 +1,48 @@
+{
+    "Clinic_Info": "Rehatrack Biomechanics System",
+    "Patient_ID": "NASM_CLIENT_01",
+    "Date": "2026-06-14 20:57:52",
+    "Assessments": {
+        "STATIC_FRONT": {
+            "Findings": "Trục lưng chuẩn",
+            "Overactive": [],
+            "Underactive": [],
+            "Metrics": {},
+            "Image_Path": "Capture_OHSA_SIDE_210024.jpg"
+        },
+        "STATIC_SIDE": {
+            "Findings": "Cổ chuẩn",
+            "Overactive": [],
+            "Underactive": [],
+            "Metrics": {},
+            "Image_Path": "Capture_STATIC_SIDE_205953.jpg"
+        },
+        "OHSA_FRONT": {
+            "Findings": "Vòng kiềng (Varus)",
+            "Overactive": [
+                "Dải chậu chày (Phải)",
+                "Dải chậu chày (Trái)"
+            ],
+            "Underactive": [
+                "Cơ khép đùi"
+            ],
+            "Metrics": {},
+            "Image_Path": "Capture_OHSA_FRONT_210015.jpg"
+        },
+        "OHSA_SIDE": {
+            "Findings": "Trục lưng chuẩn",
+            "Overactive": [],
+            "Underactive": [],
+            "Metrics": {},
+            "Image_Path": "Capture_OHSA_SIDE_210024.jpg"
+        }
+    },
+    "CEx_Prescription": {
+        "Lỗi Vòng Kiềng": {
+            "1_Inhibit": "Lăn bọt Dải chậu chày (IT Band) & Cơ hình lê.",
+            "2_Lengthen": "Kéo giãn IT Band.",
+            "3_Activate": "Kích hoạt cơ Khép đùi (Copenhagen Plank).",
+            "4_Integrate": "Squat kiểm soát bóng kẹp giữa 2 đùi."
+        }
+    }
+}
