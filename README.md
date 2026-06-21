@@ -11,6 +11,7 @@ Rehatrack Pro is a clinical posture and movement screening tool built with Pytho
 
 ## ⚙️ Installation
 1. Clone this repository:
+   ```bash
    git clone [https://github.com/vietnghien/Rehatrack-Pro.git](https://github.com/vietnghien/Rehatrack-Pro.git)
 2. Install the required dependencies:
 pip install opencv-python mediapipe numpy pillow
