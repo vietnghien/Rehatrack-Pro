@@ -146,19 +146,7 @@ class RehatrackApp:
         
         self.mp_pose = mp_pose 
         self.mp_drawing = mp_drawing 
-        
-        # --- BẢN UPDATE: TỐI ƯU HÓA LÕI AI MEDIAPIPE LÊN LEVEL 2 ---
-        self.pose = self.mp_pose.Pose(
-            static_image_mode=False,
-            model_complexity=2,             # Ép xung độ chính xác tối đa
-            smooth_landmarks=True,          # Kích hoạt bộ lọc mượt gốc
-            min_detection_confidence=0.75,  # Tăng ngưỡng nhận diện
-            min_tracking_confidence=0.75    # Tăng ngưỡng bám sát
-        )
-        
-        # --- BẢN UPDATE: BIẾN CHO BỘ LỌC CHỐNG RUNG EMA ---
-        self.prev_landmarks = {}
-        self.alpha_ema = 0.6  # Hệ số làm mượt (ngọt nước nhất cho Squat)
+        self.pose = self.mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
         self.main_container = tk.Frame(window, bg="#1e272e")
         self.main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -234,23 +222,6 @@ class RehatrackApp:
         self.render_avatar([], [])
         self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.current_metrics = self.create_empty_metrics()
-
-    # --- BẢN UPDATE: HÀM LỌC CHỐNG RUNG (EMA FILTER) ---
-    def apply_ema_filter(self, current_landmarks):
-        smoothed = {}
-        for idx, lm in enumerate(current_landmarks.landmark):
-            if lm.visibility > 0.5:
-                curr_pt = np.array([lm.x, lm.y])
-                if idx not in self.prev_landmarks:
-                    self.prev_landmarks[idx] = curr_pt
-                    smoothed[idx] = curr_pt
-                else:
-                    smoothed_pt = self.alpha_ema * curr_pt + (1 - self.alpha_ema) * self.prev_landmarks[idx]
-                    self.prev_landmarks[idx] = smoothed_pt
-                    smoothed[idx] = smoothed_pt
-            else:
-                smoothed[idx] = self.prev_landmarks.get(idx, np.array([lm.x, lm.y]))
-        return smoothed
 
     def create_empty_metrics(self):
         return {"Findings": "Đang phân tích...", "Overactive": [], "Underactive": [], "Metrics": {}, "Image_Path": ""}
@@ -397,14 +368,11 @@ class RehatrackApp:
                     test_info = PROTOCOL[self.current_step]
                     
                     if results.pose_landmarks:
-                        # --- BẢN UPDATE: ĐƯA DỮ LIỆU QUA BỘ LỌC CHỐNG RUNG ---
-                        smoothed_data = self.apply_ema_filter(results.pose_landmarks)
-                        
+                        lms = results.pose_landmarks.landmark
                         try:
                             if test_info["type"] == "static_front":
-                                # Đã thay bằng dữ liệu mượt từ smoothed_data
-                                l_sh, r_sh = smoothed_data[11], smoothed_data[12]
-                                l_hip, r_hip = smoothed_data[23], smoothed_data[24]
+                                l_sh, r_sh = [lms[11].x, lms[11].y], [lms[12].x, lms[12].y]
+                                l_hip, r_hip = [lms[23].x, lms[23].y], [lms[24].x, lms[24].y]
                                 s_tilt, s_stat, s_t_id, s_w_id = check_shoulder_tilt(l_sh, r_sh)
                                 h_tilt, h_stat, h_t_id, h_w_id = check_hip_tilt(l_hip, r_hip)
                                 
@@ -421,20 +389,20 @@ class RehatrackApp:
                                 cv2.line(image, (int(r_hip[0]*w), int(r_hip[1]*h)), (int(l_hip[0]*w), int(l_hip[1]*h)), (255, 0, 0), 3)
 
                             elif test_info["type"] == "static_side":
-                                stat, t_id, w_id = check_forward_head(smoothed_data[7], smoothed_data[11])
+                                stat, t_id, w_id = check_forward_head([lms[7].x, lms[7].y], [lms[11].x, lms[11].y])
                                 self.lbl_data_1.config(text=f"Lỗi: {stat}")
                                 all_tight_ids, all_weak_ids = t_id, w_id
                                 self.current_metrics["Findings"] = stat
-                                cv2.line(image, (int(smoothed_data[11][0]*w), 0), (int(smoothed_data[11][0]*w), h), (255, 0, 255), 2)
+                                cv2.line(image, (int(lms[11].x*w), 0), (int(lms[11].x*w), h), (255, 0, 255), 2)
 
                             elif test_info["type"] == "ohsa_front":
-                                stat, t_id, w_id = check_knee_valgus(smoothed_data[25], smoothed_data[26], smoothed_data[27], smoothed_data[28])
+                                stat, t_id, w_id = check_knee_valgus([lms[25].x, lms[25].y], [lms[26].x, lms[26].y], [lms[27].x, lms[27].y], [lms[28].x, lms[28].y])
                                 self.lbl_data_1.config(text=f"Lỗi: {stat}")
                                 all_tight_ids, all_weak_ids = t_id, w_id
                                 self.current_metrics["Findings"] = stat
 
                             elif test_info["type"] == "ohsa_side":
-                                stat, t_id, w_id = check_sagittal_squat(smoothed_data[11], smoothed_data[23], smoothed_data[15])
+                                stat, t_id, w_id = check_sagittal_squat([lms[11].x, lms[11].y], [lms[23].x, lms[23].y], [lms[15].x, lms[15].y])
                                 self.lbl_data_1.config(text=f"Lỗi: {stat}")
                                 all_tight_ids, all_weak_ids = t_id, w_id
                                 self.current_metrics["Findings"] = stat
@@ -451,7 +419,6 @@ class RehatrackApp:
 
                         except Exception as e: pass
                         
-                        # Vẽ khung xương AI gốc đè lên hình ảnh
                         self.mp_drawing.draw_landmarks(image, results.pose_landmarks, self.mp_pose.POSE_CONNECTIONS)
                 
                 self.export_frame = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
